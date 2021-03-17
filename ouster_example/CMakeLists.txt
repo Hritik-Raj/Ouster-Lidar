@@ -9,7 +9,6 @@ project(ouster_example)
 # ==== Options ====
 option(CMAKE_POSITION_INDEPENDENT_CODE "Build position independent code." ON)
 option(BUILD_SHARED_LIBS "Build shared libraries." OFF)
-option(BUILD_VIZ "Build Ouster visualizer." ON)
 
 set(CMAKE_CXX_STANDARD 11)
 if(MSVC)
@@ -22,6 +21,4 @@ endif()
 # === Subdirectories ===
 add_subdirectory(ouster_client)
 
-if(BUILD_VIZ)
-  add_subdirectory(ouster_viz)
-endif()
+
