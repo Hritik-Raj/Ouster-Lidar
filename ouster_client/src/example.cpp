@@ -3,15 +3,12 @@
 #include <iostream>
 #include <vector>
 #include <thread>
-#include <cmath>
-// #include "math.h"
+#include <atomic>
 
 #include "ouster/build.h"
 #include "ouster/client.h"
 #include "ouster/lidar_scan.h"
 #include "ouster/types.h"
-
-#define M_PI     3.14159265358979323846264338327950288
 
 using namespace ouster;
 
