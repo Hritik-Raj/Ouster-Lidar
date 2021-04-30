@@ -26,8 +26,8 @@ void thread_input() {
         char ch = 0;
         while(1)
       {
-            std::cin >> ch;
-            if (ch == 'q') break;
+            // std::cin >> ch;
+            if (getchar() == '\n') break;
       }
 }
 
@@ -75,6 +75,7 @@ int loop(std::string filename, sensor::sensor_info info, std::shared_ptr<ouster:
     // buffer to store raw packet data
     std::unique_ptr<uint8_t[]> packet_buf(new uint8_t[UDP_BUF_SIZE]);
     LidarScan scan{w, h};
+    std::vector<LidarScan::ts_t> times = timestamps();
     while (!quit_now) {
         
         // wait until sensor data is available
@@ -119,7 +120,7 @@ int loop(std::string filename, sensor::sensor_info info, std::shared_ptr<ouster:
                             auto corrected_range = final_.row(i);
                             if (!corrected_range.isApproxToConstant(0.0)) {
                                 auto corrected_azimuth = azimuth1(i) + encoder1(i);
-                                out_file  << " " << corrected_range << " " <<  corrected_azimuth << " " << altitude1(i) << " " << encoder1(i) << " " << info.lidar_origin_to_beam_origin_mm << std::endl;
+                                out_file  << " " << timestamps[i] << " " << corrected_range << " " <<  corrected_azimuth << " " << altitude1(i) << " " << encoder1(i) << " " << info.lidar_origin_to_beam_origin_mm << std::endl;
                             }
                         }
                     }
