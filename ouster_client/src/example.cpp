@@ -75,7 +75,8 @@ int loop(std::string filename, sensor::sensor_info info, std::shared_ptr<ouster:
     // buffer to store raw packet data
     std::unique_ptr<uint8_t[]> packet_buf(new uint8_t[UDP_BUF_SIZE]);
     LidarScan scan{w, h};
-    std::vector<LidarScan::ts_t> times = timestamps();
+    
+    // std::vector<LidarScan::ts_t> times = timestamps();
     while (!quit_now) {
         
         // wait until sensor data is available
@@ -102,7 +103,7 @@ int loop(std::string filename, sensor::sensor_info info, std::shared_ptr<ouster:
                 // retry until we receive a full scan
                 if (n_invalid == 0) {
                     scans.push_back(scan);
-
+                    std::vector<LidarScan::ts_t> times = scan.header(0);
                     Eigen::ArrayXd encoder1(info.format.columns_per_frame * info.format.pixels_per_column);   // theta_e
                     Eigen::ArrayXd azimuth1(info.format.columns_per_frame * info.format.pixels_per_column);   // theta_a
                     Eigen::ArrayXd altitude1(info.format.columns_per_frame * info.format.pixels_per_column);  // phi
@@ -110,6 +111,7 @@ int loop(std::string filename, sensor::sensor_info info, std::shared_ptr<ouster:
                     const double azimuth_radians = M_PI * 2.0 / w;
                     auto reshaped1 = Eigen::Map<const Eigen::Array<LidarScan::raw_t, -1, 1>>(
                     scan.field(LidarScan::RANGE).data(), info.format.columns_per_frame * info.format.pixels_per_column);
+                    
                     auto final_ = reshaped1.cast<double>();
                     for (size_t v = 0; v < w; v++) {
                         for (size_t u = 0; u < h; u++) {
@@ -120,7 +122,7 @@ int loop(std::string filename, sensor::sensor_info info, std::shared_ptr<ouster:
                             auto corrected_range = final_.row(i);
                             if (!corrected_range.isApproxToConstant(0.0)) {
                                 auto corrected_azimuth = azimuth1(i) + encoder1(i);
-                                out_file  << " " << timestamps[i] << " " << corrected_range << " " <<  corrected_azimuth << " " << altitude1(i) << " " << encoder1(i) << " " << info.lidar_origin_to_beam_origin_mm << std::endl;
+                                out_file  << " " << times[i] << " " << corrected_range << " " <<  corrected_azimuth << " " << altitude1(i) << " " << encoder1(i) << " " << info.lidar_origin_to_beam_origin_mm << std::endl;
                             }
                         }
                     }
