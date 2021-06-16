@@ -23,7 +23,7 @@ void FATAL(const char* msg) {
 }
 
 void thread_input() {
-        char ch = 0;
+        // char ch = 0;
         while(1)
       {
             // std::cin >> ch;
@@ -75,8 +75,9 @@ int loop(std::string filename, sensor::sensor_info info, std::shared_ptr<ouster:
     // buffer to store raw packet data
     std::unique_ptr<uint8_t[]> packet_buf(new uint8_t[UDP_BUF_SIZE]);
     LidarScan scan{w, h};
-    
-    // std::vector<LidarScan::ts_t> times = timestamps();
+    // std::cout << w << std::endl;
+    // out_file  << " " << w << std::endl;
+    // std::vector<LidarScan::ts_t> times = ouster::LidarScan::timestamps();
     while (!quit_now) {
         
         // wait until sensor data is available
@@ -93,6 +94,7 @@ int loop(std::string filename, sensor::sensor_info info, std::shared_ptr<ouster:
 
             // batcher will return "true" when the current scan is complete
             if (batch_to_scan(packet_buf.get(), scan)) {
+                std::vector<LidarScan::ts_t> times = scan.timestamps();
                 
                 // LidarScan provides access to azimuth block data and headers
                 auto n_invalid = std::count_if(
@@ -103,27 +105,16 @@ int loop(std::string filename, sensor::sensor_info info, std::shared_ptr<ouster:
                 // retry until we receive a full scan
                 if (n_invalid == 0) {
                     scans.push_back(scan);
-                    std::vector<LidarScan::ts_t> times = scan.header(0);
-                    Eigen::ArrayXd encoder1(info.format.columns_per_frame * info.format.pixels_per_column);   // theta_e
-                    Eigen::ArrayXd azimuth1(info.format.columns_per_frame * info.format.pixels_per_column);   // theta_a
-                    Eigen::ArrayXd altitude1(info.format.columns_per_frame * info.format.pixels_per_column);  // phi
-
-                    const double azimuth_radians = M_PI * 2.0 / w;
                     auto reshaped1 = Eigen::Map<const Eigen::Array<LidarScan::raw_t, -1, 1>>(
                     scan.field(LidarScan::RANGE).data(), info.format.columns_per_frame * info.format.pixels_per_column);
-                    
-                    auto final_ = reshaped1.cast<double>();
-                    for (size_t v = 0; v < w; v++) {
+                    auto final_ = reshaped1.cast<int>();
+                        out_file << "Frame: " << scan.frame_id << std::endl;
                         for (size_t u = 0; u < h; u++) {
-                            size_t i = u * w + v;
-                            encoder1(i) = 2 * M_PI - (v * azimuth_radians);
-                            azimuth1(i) = -info.beam_azimuth_angles[u] * M_PI / 180.0;
-                            altitude1(i) = info.beam_altitude_angles[u] * M_PI / 180.0;
-                            auto corrected_range = final_.row(i);
-                            if (!corrected_range.isApproxToConstant(0.0)) {
-                                auto corrected_azimuth = azimuth1(i) + encoder1(i);
-                                out_file  << " " << times[i] << " " << corrected_range << " " <<  corrected_azimuth << " " << altitude1(i) << " " << encoder1(i) << " " << info.lidar_origin_to_beam_origin_mm << std::endl;
-                            }
+                            out_file << "Time: " << times[u].count() << std::endl;
+                            for (size_t v = 0; v < w; v++) {
+                                size_t i = u * w + v;
+                                auto corrected_range = final_.row(i);
+                                out_file  << corrected_range << std::endl;
                         }
                     }
                 }
@@ -131,13 +122,7 @@ int loop(std::string filename, sensor::sensor_info info, std::shared_ptr<ouster:
         }
     }
     std::cerr << "ok" << std::endl;
-
-    // std::cerr << "Computing point clouds... " << std::endl;
-
-    // std::cerr << "Writing files... " << std::endl;
-
     out_file.close();
-
     return EXIT_SUCCESS;
 }
 
