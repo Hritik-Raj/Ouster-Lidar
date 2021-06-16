@@ -71,6 +71,7 @@ int loop(std::string filename, sensor::sensor_info info, std::shared_ptr<ouster:
     std::ofstream out_file;
     out_file.open(filename);
     out_file << std::fixed << std::setprecision(4);
+    int countChannel = 0;
 
     // buffer to store raw packet data
     std::unique_ptr<uint8_t[]> packet_buf(new uint8_t[UDP_BUF_SIZE]);
@@ -110,11 +111,16 @@ int loop(std::string filename, sensor::sensor_info info, std::shared_ptr<ouster:
                     auto final_ = reshaped1.cast<int>();
                         out_file << "Frame: " << scan.frame_id << std::endl;
                         for (size_t u = 0; u < h; u++) {
+                            countChannel ++;
+                            if (countChannel == 32) {
+                                countChannel = 0;
+                            }
+                            out_file << "Channel: " + std::to_string(countChannel);
                             out_file << "Time: " << times[u].count() << std::endl;
                             for (size_t v = 0; v < w; v++) {
                                 size_t i = u * w + v;
                                 auto corrected_range = final_.row(i);
-                                out_file  << corrected_range << std::endl;
+                                out_file  << corrected_range << " ";
                         }
                     }
                 }
