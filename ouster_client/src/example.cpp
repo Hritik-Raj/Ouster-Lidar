@@ -109,15 +109,15 @@ int loop(std::string filename, sensor::sensor_info info, std::shared_ptr<ouster:
                     auto reshaped1 = Eigen::Map<const Eigen::Array<LidarScan::raw_t, -1, 1>>(
                     scan.field(LidarScan::RANGE).data(), info.format.columns_per_frame * info.format.pixels_per_column);
                     auto final_ = reshaped1.cast<int>();
-                        out_file << "Frame: " << scan.frame_id << std::endl;
+                        out_file << "frame: " << scan.frame_id << std::endl;
                         for (size_t u = 0; u < h; u++) {
                             
                             if (countChannel == 32) {
                                 countChannel = 0;
                             }
-                            out_file << "Channel: " + std::to_string(countChannel) << std::endl;
+                            out_file << "channel: " + std::to_string(countChannel) << std::endl;
                             countChannel ++;
-                            out_file << "Time: " << times[u].count() << std::endl;
+                            out_file << "time: " << times[u].count() << std::endl;
                             for (size_t v = 0; v < w; v++) {
                                 size_t i = u * w + v;
                                 auto corrected_range = final_.row(i);
