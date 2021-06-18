@@ -111,17 +111,20 @@ int loop(std::string filename, sensor::sensor_info info, std::shared_ptr<ouster:
                     auto final_ = reshaped1.cast<int>();
                         out_file << "Frame: " << scan.frame_id << std::endl;
                         for (size_t u = 0; u < h; u++) {
-                            countChannel ++;
+                            
                             if (countChannel == 32) {
                                 countChannel = 0;
                             }
-                            out_file << "Channel: " + std::to_string(countChannel);
+                            out_file << "Channel: " + std::to_string(countChannel) << std::endl;
+                            countChannel ++;
                             out_file << "Time: " << times[u].count() << std::endl;
                             for (size_t v = 0; v < w; v++) {
                                 size_t i = u * w + v;
                                 auto corrected_range = final_.row(i);
+                                
                                 out_file  << corrected_range << " ";
                         }
+                        out_file << "\n" << std::endl;
                     }
                 }
             }
