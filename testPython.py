@@ -29,38 +29,40 @@ def runScript(filename, writeFile, gen1_altitude_angles, gen1_azimuth_angles):
 			tempString = line1.strip()
 			temp = tempString.split()
 
-			if (temp[0]) == "Frame:":
-				# continue
-				frameVal = (temp[1])
+			# if (temp[0]) == "Frame:":
+			# 	# continue
+			# 	frameVal = (temp[1])
 			
-			elif (temp[0]) == "Time:":
+			if (temp[0]) == "Time:":
 				# continue
 				timeVal = (temp[1])
+
+            if (temp[0]) == "Channel:":
+                uCount = int(temp[1])
 			
 			else:
-				count += 1
-				vCount += 1
-				if vCount == 1024:
-					vCount = 0
-					uCount += 1
-					if uCount == 32:
-						uCount = 0
-				range_val = float(temp[0]) # corrected range
-				if math.isclose(range_val, 0, abs_tol= 0.001):
-					continue
-				encoder_val = 2 * piVal - (vCount * azimuthRads)
-				# i = uVal * 1024 + v
-				i = uCount * 1024 + vCount
-				azimuthArr[i] = -gen1_azimuth_angles[uCount] * piVal / 180.0
-				altitudeArr[i] = gen1_altitude_angles[uCount] * piVal / 180.0
-				correctedAzimuth = azimuthArr[i] + encoder_val
-				n = 15.8060
-				range_val -= n
-				x = (range_val * np.cos(correctedAzimuth) * np.cos(altitudeArr[i])) + (n * np.cos(encoder_val))
-				y = (range_val * np.sin(correctedAzimuth) * np.cos(altitudeArr[i])) + (n * np.sin(encoder_val))
-				z = (range_val * np.sin(altitudeArr[i]))
-				row = [x, y, z]
-				test_writer.writerow(row)
+                for x, item in enumerate(temp):
+                    count += 1
+                    vCount += 1
+                    if vCount == 1024:
+                        vCount = 0
+                        
+                    range_val = float(temp[x]) # corrected range
+                    if math.isclose(range_val, 0, abs_tol= 0.001):
+                        continue
+                    encoder_val = 2 * piVal - (vCount * azimuthRads)
+                    # i = uVal * 1024 + v
+                    i = uCount * 1024 + vCount
+                    azimuthArr[i] = -gen1_azimuth_angles[uCount] * piVal / 180.0
+                    altitudeArr[i] = gen1_altitude_angles[uCount] * piVal / 180.0
+                    correctedAzimuth = azimuthArr[i] + encoder_val
+                    n = 15.8060
+                    range_val -= n
+                    x = (range_val * np.cos(correctedAzimuth) * np.cos(altitudeArr[i])) + (n * np.cos(encoder_val))
+                    y = (range_val * np.sin(correctedAzimuth) * np.cos(altitudeArr[i])) + (n * np.sin(encoder_val))
+                    z = (range_val * np.sin(altitudeArr[i]))
+                    row = [x, y, z]
+                    test_writer.writerow(row)
 		file1.close()
 		test_file.close()
 		print(count)
