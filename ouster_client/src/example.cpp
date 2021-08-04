@@ -4,6 +4,8 @@
 #include <vector>
 #include <thread>
 #include <atomic>
+#include <sstream>
+#include <chrono>
 
 #include "ouster/build.h"
 #include "ouster/client.h"
@@ -29,6 +31,32 @@ void thread_input() {
             // std::cin >> ch;
             if (getchar() == '\n') break;
       }
+}
+
+inline std::string to_iso_8601(std::chrono::time_point<std::chrono::system_clock> t) {
+ 
+	// convert to time_t which will represent the number of
+	// seconds since the UNIX epoch, UTC 00:00:00 Thursday, 1st. January 1970
+	auto epoch_seconds = std::chrono::system_clock::to_time_t(t);
+ 
+	// Format this as date time to seconds resolution
+	// e.g. 2016-08-30T08:18:51
+	std::stringstream stream;
+	stream << std::put_time(gmtime(&epoch_seconds), "%FT%T");
+ 
+	// If we now convert back to a time_point we will get the time truncated
+	// to whole seconds 
+	auto truncated = std::chrono::system_clock::from_time_t(epoch_seconds);
+ 
+	// Now we subtract this seconds count from the original time to
+	// get the number of extra microseconds..
+	auto delta_us = std::chrono::duration_cast<std::chrono::microseconds>(t - truncated).count();
+ 
+	// And append this to the output stream as fractional seconds
+	// e.g. 2016-08-30T08:18:51.867479
+	stream << "." << std::fixed << std::setw(6) << std::setfill('0') << delta_us;
+ 
+	return stream.str();
 }
 
 int loop(std::string filename, sensor::sensor_info info, std::shared_ptr<ouster::sensor::client> handle) {
@@ -79,6 +107,10 @@ int loop(std::string filename, sensor::sensor_info info, std::shared_ptr<ouster:
     // std::cout << w << std::endl;
     // out_file  << " " << w << std::endl;
     // std::vector<LidarScan::ts_t> times = ouster::LidarScan::timestamps();
+
+    std::chrono::time_point<std::chrono::system_clock> x = std::chrono::system_clock::now();
+    out_file << "start: " << to_iso_8601(x) << std::endl;
+
     while (!quit_now) {
         
         // wait until sensor data is available
@@ -109,23 +141,22 @@ int loop(std::string filename, sensor::sensor_info info, std::shared_ptr<ouster:
                     auto reshaped1 = Eigen::Map<const Eigen::Array<LidarScan::raw_t, -1, 1>>(
                     scan.field(LidarScan::RANGE).data(), info.format.columns_per_frame * info.format.pixels_per_column);
                     auto final_ = reshaped1.cast<int>();
-                        out_file << "frame: " << scan.frame_id << std::endl;
-                        for (size_t u = 0; u < h; u++) {
-                            
-                            if (countChannel == 32) {
-                                countChannel = 0;
-                            }
-                            out_file << "channel: " + std::to_string(countChannel) << std::endl;
-                            countChannel ++;
-                            out_file << "time: " << times[u].count() << std::endl;
-                            for (size_t v = 0; v < w; v++) {
-                                size_t i = u * w + v;
-                                auto corrected_range = final_.row(i);
-                                
-                                out_file  << corrected_range << " ";
+                    out_file << "frame: " << scan.frame_id << std::endl;
+                    for (size_t u = 0; u < h; u++) {
+                        if (countChannel == 32) {
+                            countChannel = 0;
                         }
-                        out_file << "\n" << std::endl;
+                        out_file << "channel: " + std::to_string(countChannel) << std::endl;
+                        countChannel ++;
+                        out_file << "time: " << times[u].count() << std::endl;
+                        for (size_t v = 0; v < w; v++) {
+                            size_t i = u * w + v;
+                            auto corrected_range = final_.row(i);
+                            
+                            out_file  << corrected_range << " ";
                     }
+                    out_file << "\n" << std::endl;
+                }
                 }
             }
         }
@@ -203,5 +234,4 @@ int main(int argc, char* argv[]) {
 
     return EXIT_SUCCESS;
 }
-
 
