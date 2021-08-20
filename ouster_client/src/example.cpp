@@ -12,6 +12,25 @@
 #include "ouster/lidar_scan.h"
 #include "ouster/types.h"
 
+
+#include <ctime>
+#include <chrono>
+#include <iostream> 
+#include <locale>  
+
+#if defined (_WIN32) 
+#define WINDOWSLIB 1
+#elif defined (__APPLE__)//iOS, Mac OS
+#define MACOSLIB 1
+#elif defined (__LINUX__) || defined(__gnu_linux__) || defined(__linux__) || defined(__linux) || defined(linux)//_Ubuntu - Fedora - Centos - RedHat
+#define LINUXLIB 1
+#elif defined (__EMSCRIPTEN__)
+#define EMSCRIPTENLIB 1
+#endif
+
+#define WriteLine(data)std::cout<< data <<std::endl;
+typedef std::string String;
+
 using namespace ouster;
 
 // const int N_SCANS = 1;
@@ -32,6 +51,46 @@ void thread_input() {
             if (getchar() == '\n') break;
       }
 }
+
+
+String CurrentISO8601DateTime(bool toUTC=true)
+{
+    using namespace std::chrono;
+    system_clock::time_point now = system_clock::now();
+    time_t timet = system_clock::to_time_t(now);
+    std::tm tm{};
+    String localeStr = setlocale(LC_ALL, nullptr);
+    setlocale(LC_ALL, u8"");
+    String format = String(u8"%FT%T.").append(std::to_string(duration_cast<milliseconds>(now.time_since_epoch()).count() % static_cast<long long>(1000)));
+    if (toUTC)
+    {
+#ifdef WINDOWSLIB
+        gmtime_s(&tm, &timet);
+#elif LINUXLIB
+        gmtime_r(&timet, &tm);
+#elif EMSCRIPTENLIB
+        gmtime_r(&timet, &tm);
+#endif
+        format = format.append(u8"Z");
+    }
+    else
+    {
+#ifdef WINDOWSLIB
+        localtime_s(&tm, &timet);
+#elif LINUXLIB
+        localtime_r(&timet, &tm);
+#elif EMSCRIPTENLIB
+        localtime_r(&timet, &tm);
+#endif
+        format.append(u8"%z");
+    }
+    String result = String(255, 0);
+    const size_t length = std::strftime(&result[0], result.size(), format.c_str(), &tm);
+    result.resize(length);
+    setlocale(LC_ALL, localeStr.c_str());
+    return result;
+}
+
 
 inline std::string to_iso_8601(std::chrono::time_point<std::chrono::system_clock> t) {
  
@@ -108,8 +167,8 @@ int loop(std::string filename, sensor::sensor_info info, std::shared_ptr<ouster:
     // out_file  << " " << w << std::endl;
     // std::vector<LidarScan::ts_t> times = ouster::LidarScan::timestamps();
 
-    std::chrono::time_point<std::chrono::system_clock> x = std::chrono::system_clock::now();
-    out_file << "start: " << to_iso_8601(x) << std::endl;
+    // std::chrono::time_point<std::chrono::system_clock> x = std::chrono::system_clock::now();
+    out_file << "start: " << CurrentISO8601DateTime(false) << std::endl;
 
     while (!quit_now) {
         
@@ -234,4 +293,3 @@ int main(int argc, char* argv[]) {
 
     return EXIT_SUCCESS;
 }
-
